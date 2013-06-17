@@ -138,44 +138,28 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  * @var string
  */
 	public $jQueryObject = '$';
-
+ 
 /**
- * List of created dialogs
+ * Constructor
  *
- * @var array
- * @access protected
- */
-	protected $_dialogs = array();
-
-/**
- * String used to identify the selector
+ * ### Settings
  *
- * @var string
- * @access protected
- */
-	protected $_selector = "";
-
-
-/**
- * Helper function to wrap repetitive simple method templating.
+ * - `configFile` A file containing an array of tags you wish to redefine.
  *
- * @param string $method The method name being generated.
- * @param string $template The method template
- * @param array $options Array of options for method
- * @param array $extraSafeKeys Extra safe keys
- * @return string Composed method string
+ * ### Customizing tag sets
+ *
+ * Using the `configFile` option you can redefine the tag HtmlHelper will use.
+ * The file named should be compatible with HtmlHelper::loadConfig().
+ *
+ * @param View $View The View this helper is being attached to.
+ * @param array $settings Configuration settings for the helper.
  */
-	protected function _methodTemplate($method, $template, $options, $extraSafeKeys = array()) {
-		$options = $this->_mapOptions($method, $options);
-		$options = $this->_prepareCallbacks($method, $options);
-		$callbacks = array_keys($this->_callbackArguments[$method]);
-		if (!empty($extraSafeKeys)) {
-			$callbacks = array_merge($callbacks, $extraSafeKeys);
-		}
-		$options = $this->_parseOptions($options, $callbacks);
+    public function __construct(View $View, $settings = array()) {
 
-		return sprintf($template, $this->selection, $options);
-	}
+        parent::__construct($View, $settings);
+        $this->bufferedMethods = array('event', 'sortable', 'drag', 'drop', 'slider', 'dialog', 'createdialog', 'validate', 'block', 'css', 'attr', 'end');
+        
+    }    
 
 /**
  * Create javascript selector for a CSS rule
@@ -184,16 +168,14 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  * @param string $type The type of use
  * @return JqueryEngineHelper instance of $this. Allows chained methods.
  */
-	public function get($selector, $type = 'instance') {
-		if ($selector == 'window' || $selector == 'document' || $selector == 'data') {
-			$this->selection = $this->jQueryObject . '(' . $selector . ')';
-			$this->_selector = null;
-		} else {
-			$this->_selector = $selector;
-			$this->selection = $this->jQueryObject . '("' . $selector . '")';
-		}
-		return ($type == 'instance') ? $this : $this->selection;
-	}
+    public function get($selector) {
+        if ($selector == 'window' || $selector == 'document' || $selector == 'data') {
+            $this->selection = $this->jQueryObject . '(' . $selector . ')';
+        } else {
+            $this->selection = $this->jQueryObject . '("' . $selector . '")';
+        }
+        return $this;
+    }
 
 /**
  * passes a block of javascript code to the script cache.
@@ -201,58 +183,125 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  * @param array $block Javascript code.
  * @return string Block of code.
  */
-	public function block($block)
-	{
+    public function block($block) {
+        return sprintf('%s', $block);
+    }
+
+/**
+ * Getter and setter for dom manipulation of element attributes.
+ * Allows chained methods.
+ *
+ * @param array $options Options for attr
+ * @return string completed attr script.
+ */
+    public function attr($options = array()) {
+        
+        if(is_null($this->selection))
+            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
+ 
+        if(!array_key_exists('attributeNames', $options))
+            throw new CakeException('options missing attributeNames key is a required parameter');    
+        
+        if(!(is_string($options['attributeNames']) || is_array($options['attributeNames'])))
+            throw new CakeException('options value for attributeNames key must be a string or an array');    
+        
+        $selection = null;
+        if(is_string($options['attributeNames'])) {
+
+            if(array_key_exists('value', $options)) {
+
+                if(!is_string($options['value']))
+                    $options['value'] = "";
+                
+                $selection = sprintf('%s.attr(\'%s\', \'%s\')', $this->selection, $options['attributeNames'], $options['value']);
+            } else {
+                $selection = sprintf('%s.attr(\'%s\')', $this->selection, $options['attributeNames'] );
+            }
+            
+        } else {
+            $selection = sprintf('%s.attr(%s)', $this->selection, $this->object($options['attributeNames']) );
+        }
+
+        $this->selection = $selection;
+
+        $chainMethod = (array_key_exists('chain', $options)) ? (boolean) $options['chain'] : false;
+        if($chainMethod) {
+            return $this;
+        }    
+        
+        return $this->end();
+    }    
+
+/**
+ * Getter and setter for dom manipulation of style properties.
+ * Allows chained methods.
+ *
+ * @param array $options Options for css
+ * @return string completed css script.
+ */
+    public function css($options = array()) {
+        
+        if(is_null($this->selection))
+            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
+
+        if(!array_key_exists('propertyNames', $options))
+            throw new CakeException('options missing propertyNames key is a required parameter');    
+        
+        if(!(is_string($options['propertyNames']) || is_array($options['propertyNames'])))
+            throw new CakeException('options value for propertyNames key must be a string or an array');
+        
+        $selection = null;
+        if(is_string($options['propertyNames'])) {
+
+            if(array_key_exists('value', $options)) {
+
+                if(!is_string($options['value']))
+                    $options['value'] = "";
+                
+                $selection = sprintf('%s.css(\'%s\', \'%s\')', $this->selection, $options['propertyNames'], $options['value']);
+            } else {
+                $selection = sprintf('%s.css(\'%s\')', $this->selection, $options['propertyNames'] );        
+            }
+            
+        } else {
+            $selection = sprintf('%s.css(%s)', $this->selection, $this->object($options['propertyNames']) );
+        }
+
+        $this->selection = $selection;
+
+        $chainMethod = (array_key_exists('chain', $options)) ? (boolean) $options['chain'] : false;
+        if($chainMethod) {
+            return $this;
+        }    
+        
+        return $this->end();
+    }    
+
+/**
+ * Allow to stop chaining methods to $selector.
+ *
+ * @param boolean $display flags to add the end method to the chained method
+ * @return string completed end script.
+ */
+    public function end($display = false) {
+         
+        if(is_null($this->selection))
+            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
+ 
+        $template = ($display) ? '%s.end();' : '%s;';        
+        $selection = sprintf($template, $this->selection);
+        $this->selection = null;
+        return $selection;
+    } 
+       
+/**
+ * passes a block of javascript code to the script cache.
+ *
+ * @param array $block Javascript code.
+ * @return string Block of code.
+ */
+	public function block($block) {
 		return sprintf('%s', $block);
-	}
-
-/**
- * Add a dialog box to the script cache.
- *
- * @param array $options Options for the dialog.
- * @param string $type The type of use
- * @return string Completed Dialog script.
- */
-	public function createdialog($selector, $options = array(), $type = 'display')
-	{
-		$default_options = array( 'height' => 140, 'width' => 250, 'draggable' => false, 'resizable' => false, 'autoOpen' => false );
-		$options = array_merge($default_options, $options);
-		$dialogOptions = $this->_parseOptions($options);
-
-		if(is_string($selector))
-		{
-			$pos = strpos($selector, '#');
-			if ($pos !== false) {
-				$variable = substr($selector, 1);
-			} else {
-				$variable = $selector;
-			}
-			$this->_dialogs[$variable] = array('name' => $variable . 'ModalDialog', 'options' => $options, 'id' => $selector);
-
-			return ($type == 'instance') ? $this : sprintf('var %s = %s.createDialog("%s", {%s});', $this->_dialogs[$variable]['name'], $this->jQueryObject, $selector, $dialogOptions);
-
-		}
-	}
-
-/**
- * get dialog variable.
- *
- * @param string $variable The name of the .
- * @return string Completed Dialog script.
- */
-	public function getdialog($selector)
-	{
-		if(is_string($selector))
-		{
-			$pos = strpos($selector, '#');
-			if ($pos !== false) {
-				$variable = substr($selector, 1);
-			} else {
-				$variable = $selector;
-			}
-			return (array_key_exists($variable, $this->_dialogs)) ? $this->_dialogs[$variable]['name'] : false;
-		}
-		return false;
 	}
 
 /**
@@ -507,5 +556,26 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
 		}
 		return $selector . $method;
 	}
+    
+/**
+ * Helper function to wrap repetitive simple method templating.
+ *
+ * @param string $method The method name being generated.
+ * @param string $template The method template
+ * @param array $options Array of options for method
+ * @param array $extraSafeKeys Extra safe keys
+ * @return string Composed method string
+ */
+    protected function _methodTemplate($method, $template, $options, $extraSafeKeys = array()) {
+        $options = $this->_mapOptions($method, $options);
+        $options = $this->_prepareCallbacks($method, $options);
+        $callbacks = array_keys($this->_callbackArguments[$method]);
+        if (!empty($extraSafeKeys)) {
+            $callbacks = array_merge($callbacks, $extraSafeKeys);
+        }
+        $options = $this->_parseOptions($options, $callbacks);
+
+        return sprintf($template, $this->selection, $options);
+    }
 
 }

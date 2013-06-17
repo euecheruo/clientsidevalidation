@@ -1,7 +1,7 @@
 /*!
  * JQuery Address
  *
- * Copyright 2012, Emeka Echeruo
+ * Copyright 2012, Emeka U Echeruo (emeka.echeruo@gmail.com)
  *
  * Depends:
  *	jquery.js (core)

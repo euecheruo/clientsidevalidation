@@ -36,7 +36,7 @@ abstract class JsBaseEngineHelper extends AppHelper {
  *
  * @var array
  */
-	public $bufferedMethods = array('event', 'sortable', 'drag', 'drop', 'slider', 'dialog', 'createdialog', 'validate', 'block');
+	public $bufferedMethods = array('event', 'sortable', 'drag', 'drop', 'slider');
 
 /**
  * Contains a list of callback names -> default arguments.
