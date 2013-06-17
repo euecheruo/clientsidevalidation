@@ -17,7 +17,6 @@ Usage for $validation options:
 
 	echo $this->Form->input($fieldName, $options = array(), $validation = array());
 
-
 Here is an example below:
 
 	echo $this->Form->create('User');
