@@ -140,26 +140,12 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
 	public $jQueryObject = '$';
  
 /**
- * Constructor
+ * An array of lowercase method names in the Engine that are buffered unless otherwise disabled.
+ * This allows specific 'end point' methods to be automatically buffered by the JsHelper.
  *
- * ### Settings
- *
- * - `configFile` A file containing an array of tags you wish to redefine.
- *
- * ### Customizing tag sets
- *
- * Using the `configFile` option you can redefine the tag HtmlHelper will use.
- * The file named should be compatible with HtmlHelper::loadConfig().
- *
- * @param View $View The View this helper is being attached to.
- * @param array $settings Configuration settings for the helper.
+ * @var array
  */
-    public function __construct(View $View, $settings = array()) {
-
-        parent::__construct($View, $settings);
-        $this->bufferedMethods = array('event', 'sortable', 'drag', 'drop', 'slider', 'dialog', 'createdialog', 'validate', 'block', 'css', 'attr', 'end');
-        
-    }    
+    public $bufferedMethods = array('event', 'sortable', 'drag', 'drop', 'slider', 'dialog', 'createdialog', 'validate', 'block', 'css', 'attr', 'end');
 
 /**
  * Create javascript selector for a CSS rule
@@ -191,90 +177,42 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  * Getter and setter for dom manipulation of element attributes.
  * Allows chained methods.
  *
- * @param array $options Options for attr
+ * @param mixed $attributeNames The attributes names
+ * @param array $value The value (optional)
+ * @param array $chainMethod flags chaining method (optional) 
  * @return string completed attr script.
  */
-    public function attr($options = array()) {
+    public function attr() {
+        $agruments = func_get_args();
         
-        if(is_null($this->selection))
-            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
- 
-        if(!array_key_exists('attributeNames', $options))
-            throw new CakeException('options missing attributeNames key is a required parameter');    
-        
-        if(!(is_string($options['attributeNames']) || is_array($options['attributeNames'])))
-            throw new CakeException('options value for attributeNames key must be a string or an array');    
-        
-        $selection = null;
-        if(is_string($options['attributeNames'])) {
-
-            if(array_key_exists('value', $options)) {
-
-                if(!is_string($options['value']))
-                    $options['value'] = "";
-                
-                $selection = sprintf('%s.attr(\'%s\', \'%s\')', $this->selection, $options['attributeNames'], $options['value']);
-            } else {
-                $selection = sprintf('%s.attr(\'%s\')', $this->selection, $options['attributeNames'] );
-            }
-            
-        } else {
-            $selection = sprintf('%s.attr(%s)', $this->selection, $this->object($options['attributeNames']) );
-        }
-
-        $this->selection = $selection;
-
-        $chainMethod = (array_key_exists('chain', $options)) ? (boolean) $options['chain'] : false;
-        if($chainMethod) {
-            return $this;
-        }    
-        
-        return $this->end();
-    }    
+        //redundant
+        if(!is_array($arguments)) { $arguments = array(); } 
+        if(isset($arguments[0])) {  $arguments[1] = $arguments[0]; }
+        if(isset($arguments[1])) {  $arguments[2] = $arguments[1]; }
+        if(isset($arguments[2])) {  $arguments[3] = $arguments[2]; }
+        $arguments[0] = "attr";
+        return $this->_methodOptions($arguments);
+     }    
 
 /**
  * Getter and setter for dom manipulation of style properties.
  * Allows chained methods.
  *
- * @param array $options Options for css
+ * @param mixed $propertyNames The property names
+ * @param array $value The value (optional)
+ * @param array $chainMethod flags chaining method (optional) 
  * @return string completed css script.
  */
-    public function css($options = array()) {
-        
-        if(is_null($this->selection))
-            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
+    public function css() {
+        $agruments = func_get_args();
 
-        if(!array_key_exists('propertyNames', $options))
-            throw new CakeException('options missing propertyNames key is a required parameter');    
-        
-        if(!(is_string($options['propertyNames']) || is_array($options['propertyNames'])))
-            throw new CakeException('options value for propertyNames key must be a string or an array');
-        
-        $selection = null;
-        if(is_string($options['propertyNames'])) {
-
-            if(array_key_exists('value', $options)) {
-
-                if(!is_string($options['value']))
-                    $options['value'] = "";
-                
-                $selection = sprintf('%s.css(\'%s\', \'%s\')', $this->selection, $options['propertyNames'], $options['value']);
-            } else {
-                $selection = sprintf('%s.css(\'%s\')', $this->selection, $options['propertyNames'] );        
-            }
-            
-        } else {
-            $selection = sprintf('%s.css(%s)', $this->selection, $this->object($options['propertyNames']) );
-        }
-
-        $this->selection = $selection;
-
-        $chainMethod = (array_key_exists('chain', $options)) ? (boolean) $options['chain'] : false;
-        if($chainMethod) {
-            return $this;
-        }    
-        
-        return $this->end();
+        //redundant
+        if(!is_array($arguments)) { $arguments = array(); } 
+        if(isset($arguments[0])) {  $arguments[1] = $arguments[0]; }
+        if(isset($arguments[1])) {  $arguments[2] = $arguments[1]; }
+        if(isset($arguments[2])) {  $arguments[3] = $arguments[2]; }
+        $arguments[0] = "css";
+        return $this->_methodOptions($arguments);
     }    
 
 /**
@@ -295,7 +233,7 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
     } 
        
 /**
- * passes a block of javascript code to the script cache.
+ * Passes a block of javascript code to the script cache.
  *
  * @param array $block Javascript code.
  * @return string Block of code.
@@ -371,7 +309,7 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
 		if ($options['wrap']) {
 			$callback = sprintf($function, $callback);
 		}
-		return sprintf('%s.bind("%s", %s);', $this->selection, $type, $callback);
+		return sprintf('%s.bind("%s", %s);', $this->end(), $type, $callback);
 	}
 
 /**
@@ -575,7 +513,58 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
         }
         $options = $this->_parseOptions($options, $callbacks);
 
-        return sprintf($template, $this->selection, $options);
+        return sprintf($template, $this->end(), $options);
+    }
+    
+/**
+ * Helper function for getter and setter method templating. 
+ *
+ * @param array $arguments The agruments
+ * @return string Composed method string
+ */
+    protected function _methodOptions($arguments) {
+
+        $methodName = (!isset($arguments[0])) ? $arguments[0] : "attr";
+        
+        if(is_null($this->selection))
+            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
+
+        if(!isset($arguments[1]))
+            throw new CakeException('options missing key is a required parameter');    
+        
+        $property = $arguments[1];
+        
+        if(!(is_string($property) || is_array($property)))
+            throw new CakeException('options value for key must be a string or an array');
+        
+        $selection = null;
+        if(is_string($property)) {
+
+            if(isset($arguments[2])) {
+                
+                $value = $arguments[2];
+    
+                if(!is_string($value))
+                    $value = "";
+                
+                $selection = sprintf('%s.%s(\'%s\', \'%s\')', $this->selection, $methodName, $property, $value);
+            } else {
+                $selection = sprintf('%s.%s(\'%s\')', $this->selection, $methodName, $property );        
+            }
+            
+        } else {
+            $selection = sprintf('%s.%s(%s)', $this->selection, $methodName, $this->object($property) );
+        }
+
+        $this->selection = $selection;
+
+        $chainMethod = (isset($arguments[3])) ? (boolean) isset($arguments[3]) : false;
+        if($chainMethod) {
+            return $this;
+        }    
+        
+        return $this->end();
+        
     }
 
 }
