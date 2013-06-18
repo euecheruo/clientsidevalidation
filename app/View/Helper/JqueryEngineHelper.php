@@ -145,7 +145,7 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  *
  * @var array
  */
-    public $bufferedMethods = array('event', 'sortable', 'drag', 'drop', 'slider', 'dialog', 'createdialog', 'validate', 'block', 'css', 'attr', 'end');
+    public $bufferedMethods = array('event', 'sortable', 'drag', 'drop', 'slider', 'dialog', 'validate', 'block', 'css', 'attr', 'end');
 
 /**
  * Create javascript selector for a CSS rule
@@ -164,34 +164,29 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
     }
 
 /**
- * passes a block of javascript code to the script cache.
+ * Passes a block of javascript code to the script cache.
  *
  * @param array $block Javascript code.
  * @return string Block of code.
  */
-    public function block($block) {
-        return sprintf('%s', $block);
-    }
+	public function block($block)
+	{
+		return sprintf('%s', $block);
+	}
 
 /**
  * Getter and setter for dom manipulation of element attributes.
  * Allows chained methods.
  *
  * @param mixed $attributeNames The attributes names
- * @param array $value The value (optional)
- * @param array $chainMethod flags chaining method (optional) 
+ * @param string $value The value (optional)
+ * @param string $chainMethod flags true or false to chaining the method (optional) 
  * @return string completed attr script.
  */
     public function attr() {
         $agruments = func_get_args();
-        
-        //redundant
-        if(!is_array($arguments)) { $arguments = array(); } 
-        if(isset($arguments[0])) {  $arguments[1] = $arguments[0]; }
-        if(isset($arguments[1])) {  $arguments[2] = $arguments[1]; }
-        if(isset($arguments[2])) {  $arguments[3] = $arguments[2]; }
-        $arguments[0] = "attr";
-        return $this->_methodOptions($arguments);
+        array_splice($agruments, 0, 0, 'attr');
+        return $this->_methodOptions($agruments);
      }    
 
 /**
@@ -199,21 +194,15 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  * Allows chained methods.
  *
  * @param mixed $propertyNames The property names
- * @param array $value The value (optional)
- * @param array $chainMethod flags chaining method (optional) 
+ * @param string $value The value (optional)
+ * @param string $chainMethod flags true or false to chaining the method (optional) 
  * @return string completed css script.
  */
     public function css() {
         $agruments = func_get_args();
-
-        //redundant
-        if(!is_array($arguments)) { $arguments = array(); } 
-        if(isset($arguments[0])) {  $arguments[1] = $arguments[0]; }
-        if(isset($arguments[1])) {  $arguments[2] = $arguments[1]; }
-        if(isset($arguments[2])) {  $arguments[3] = $arguments[2]; }
-        $arguments[0] = "css";
-        return $this->_methodOptions($arguments);
-    }    
+        array_splice($agruments, 0, 0, 'css');
+        return $this->_methodOptions($agruments);
+    }   
 
 /**
  * Allow to stop chaining methods to $selector.
@@ -224,13 +213,13 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
     public function end($display = false) {
          
         if(is_null($this->selection))
-            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
+            return;
  
         $template = ($display) ? '%s.end();' : '%s;';        
         $selection = sprintf($template, $this->selection);
         $this->selection = null;
         return $selection;
-    } 
+    }    
        
 /**
  * Passes a block of javascript code to the script cache.
@@ -263,7 +252,7 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  * Requires both Jquery.Validate and Jquery.Validator to be loaded.
  *
  * @param array $options Array of options for the validate element.
- * @return string Completed Validate script.
+ * @return string completed validate script.
  */
 	public function validate($options = array()) {
 		$callbacks = array('invalidHandler', 'submitHandler', 'errorPlacement', 'showErrors', 'highlight', 'unhighlight');
@@ -517,54 +506,54 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
     }
     
 /**
- * Helper function for getter and setter method templating. 
+ * Helper function to handle options used by method. 
  *
- * @param array $arguments The agruments
+ * @param array $options Array of options for method
  * @return string Composed method string
  */
-    protected function _methodOptions($arguments) {
+    protected function _methodOptions($options = array()) {
 
-        $methodName = (!isset($arguments[0])) ? $arguments[0] : "attr";
-        
-        if(is_null($this->selection))
-            throw new CakeException('missing JqueryEngineHelper::get() method required to start chained method');    
+        if(!isset($options[0]) || !isset($options[1]))
+            return;
 
-        if(!isset($arguments[1]))
-            throw new CakeException('options missing key is a required parameter');    
-        
-        $property = $arguments[1];
+        $methodName = $options[0];
+        $property = $options[1];
         
         if(!(is_string($property) || is_array($property)))
-            throw new CakeException('options value for key must be a string or an array');
+            return;
         
-        $selection = null;
         if(is_string($property)) {
 
-            if(isset($arguments[2])) {
+            if(isset($options[2])) {
                 
-                $value = $arguments[2];
+                $value = $options[2];
     
                 if(!is_string($value))
-                    $value = "";
+                    return;
                 
-                $selection = sprintf('%s.%s(\'%s\', \'%s\')', $this->selection, $methodName, $property, $value);
+                $this->selection = sprintf('%s.%s("%s", "%s")', $this->selection, $methodName, $property, $value);
+                if($chainMethod = (isset($options[3])) ? (boolean) $options[3] : false) {
+                     return $this; 
+                }
+                               
             } else {
-                $selection = sprintf('%s.%s(\'%s\')', $this->selection, $methodName, $property );        
+                $this->selection = sprintf('%s.%s("%s")', $this->selection, $methodName, $property);
             }
             
         } else {
-            $selection = sprintf('%s.%s(%s)', $this->selection, $methodName, $this->object($property) );
+
+            $this->selection = sprintf('%s.%s(%s)', $this->selection, $methodName, $this->object($property) );
+
+            if(isset($options[2])) {    
+                if($chainMethod = (boolean) $options[2]) {
+                     return $this; 
+                }                
+            } 
+        
         }
-
-        $this->selection = $selection;
-
-        $chainMethod = (isset($arguments[3])) ? (boolean) isset($arguments[3]) : false;
-        if($chainMethod) {
-            return $this;
-        }    
         
         return $this->end();
         
-    }
-
+    }    
+   
 }
