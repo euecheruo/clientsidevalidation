@@ -393,11 +393,11 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
 		$callbacks = array('success', 'error', 'beforeSend', 'complete');
 		if (!empty($options['dataExpression'])) {
 			$callbacks[] = 'data';
-			array_remove_item('dataExpression', $options);
+			unset($options['dataExpression']);
 		}
 		if (!empty($options['contextExpression'])) {
 			$callbacks[] = 'context';
-			array_remove_item('contextExpression', $options);
+			unset($options['contextExpression']);
 		}
 
 		$options = $this->_prepareCallbacks('request', $options);
@@ -513,47 +513,43 @@ class JqueryEngineHelper extends JsBaseEngineHelper {
  */
     protected function _methodOptions($options = array()) {
 
-        if(!isset($options[0]) || !isset($options[1]))
+        if(!isset($options[0]) || !isset($options[1])) {
             return;
+        }
 
         $methodName = $options[0];
         $property = $options[1];
         
-        if(!(is_string($property) || is_array($property)))
+        if(!(is_string($property) || is_array($property))) {
             return;
+        }
         
         if(is_string($property)) {
 
             if(isset($options[2])) {
                 
                 $value = $options[2];
-    
-                if(!is_string($value))
+                if(!is_string($value)) {
                     return;
+                }
                 
                 $this->selection = sprintf('%s.%s("%s", "%s")', $this->selection, $methodName, $property, $value);
                 if($chainMethod = (isset($options[3])) ? (boolean) $options[3] : false) {
                      return $this; 
-                }
-                               
+                }                               
             } else {
                 $this->selection = sprintf('%s.%s("%s")', $this->selection, $methodName, $property);
-            }
-            
+            }            
         } else {
-
             $this->selection = sprintf('%s.%s(%s)', $this->selection, $methodName, $this->object($property) );
-
             if(isset($options[2])) {    
                 if($chainMethod = (boolean) $options[2]) {
                      return $this; 
                 }                
-            } 
-        
+            }         
         }
         
         return $this->end();
-        
-    }    
+    }   
    
 }
